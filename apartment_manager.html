@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartman</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #0f172a; color: white; padding: 10px; }
+        .container { max-width: 600px; margin: 0 auto; padding-bottom: 120px; }
+        h1 { text-align: center; margin: 20px 0; }
+        .panel { background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; margin: 8px 0; background: #334155; border: 1px solid #475569; color: white; border-radius: 4px; }
+        button { width: 100%; padding: 10px; margin: 10px 0; background: #0891b2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .add-btn { background: #10b981; }
+        .daire { background: #1e293b; border: 2px solid #334155; padding: 12px; margin-bottom: 10px; border-radius: 8px; }
+        .daire-no { font-size: 18px; font-weight: bold; color: #0891b2; margin-bottom: 8px; }
+        .daire-info { background: #334155; padding: 8px; border-radius: 4px; margin-bottom: 10px; cursor: pointer; font-size: 13px; }
+        .ucretler { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .ucret { background: #334155; border: 2px solid #475569; padding: 8px; text-align: center; cursor: pointer; border-radius: 4px; font-size: 11px; }
+        .ucret.odenmis { border-color: #10b981; background: rgba(16, 185, 129, 0.2); }
+        .toplam { display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #475569; font-size: 13px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.acik { display: flex; }
+        .modal-icerik { background: #1e293b; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; overflow-y: auto; max-height: 90vh; }
+        .modal-icerik h2 { margin-bottom: 15px; }
+        .modal-icerik input { margin: 8px 0; }
+        .modal-butonlar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .durum-butonlar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .durum-btn { padding: 8px; border: 2px solid #475569; background: #334155; margin: 0; }
+        .durum-btn.secili { background: #0891b2; border-color: #0891b2; }
+        .alt-bilgi { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; border-top: 1px solid #334155; padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .alt-bilgi-kutu { background: #1e293b; padding: 8px; text-align: center; border-radius: 4px; font-size: 12px; }
+        .bos-daire { opacity: 0.5; }
+        .zam-uyarisi { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .uyari { background: #ef4444; color: white; padding: 5px; border-radius: 4px; margin-bottom: 8px; text-align: center; font-weight: bold; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 Apartman</h1>
+        
+        <div class="panel">
+            <label>Ay:</label>
+            <input type="month" id="ay">
+            
+            <label style="margin-top: 10px;">Aidat (₺):</label>
+            <input type="number" id="aidat" value="0" min="0">
+            
+            <label style="margin-top: 10px;">Isınma (₺):</label>
+            <input type="number" id="isitma" value="0" min="0">
+            
+            <button id="kaydetBtn">💾 Kaydet</button>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div style="flex: 1; background: #334155; padding: 10px; border-radius: 4px; font-size: 12px;">💜 Aidat: <span id="aidat-goster">0</span></div>
+                <div style="flex: 1; background: #334155; padding: 10px; border-radius: 4px; font-size: 12px;">🔥 Isınma: <span id="isitma-goster">0</span></div>
+            </div>
+        </div>
+        
+        <input type="text" id="ara" placeholder="Ara...">
+        <button class="add-btn" id="ekleBtn">+ Yeni Daire</button>
+        
+        <div id="daireler"></div>
+    </div>
+    
+    <div class="alt-bilgi">
+        <div class="alt-bilgi-kutu">Gösterilen: <span id="gosterilen">0</span></div>
+        <div class="alt-bilgi-kutu">Bekleyen: ₺<span id="bekleyen">0</span></div>
+    </div>
+    
+    <div id="modal" class="modal">
+        <div class="modal-icerik">
+            <h2 id="modal-baslik">Yeni Daire</h2>
+            
+            <label>Daire No:</label>
+            <input type="number" id="mod-no" min="1" max="52">
+            
+            <label style="margin-top: 10px;">Ad:</label>
+            <input type="text" id="mod-ad">
+            
+            <label style="margin-top: 10px;">Telefon:</label>
+            <input type="text" id="mod-tel">
+            
+            <label style="margin-top: 10px;">Kira (₺):</label>
+            <input type="number" id="mod-kira" min="0">
+            
+            <label style="margin-top: 10px;">Zam Ayı:</label>
+            <input type="month" id="mod-zam">
+            
+            <label style="margin-top: 10px;">Durumu:</label>
+            <div class="durum-butonlar">
+                <button class="durum-btn" id="bos-btn">🏚️ Boş</button>
+                <button class="durum-btn secili" id="dolu-btn">👤 Dolu</button>
+            </div>
+            
+            <div class="modal-butonlar">
+                <button id="iptal-btn">İptal</button>
+                <button id="kaydet-btn" style="background: #0891b2;">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let veri = { daireler: [], aidat: 0, isitma: 0, ay: '', bos: false };
+
+        // Başlat
+        function basla() {
+            console.log('Başlangıç başladı');
+            
+            // 52 daire oluştur
+            for (let i = 1; i <= 52; i++) {
+                veri.daireler.push({
+                    no: i, ad: '', tel: '', kira: 0, zam: '', bos: false,
+                    odeme: { kira: {}, aidat: {}, isitma: {} }
+                });
+            }
+            
+            console.log('52 daire oluşturuldu:', veri.daireler.length);
+            
+            veri.ay = new Date().toISOString().slice(0, 7);
+            document.getElementById('ay').value = veri.ay;
+            
+            console.log('Renderize ediliyor');
+            render();
+            console.log('Başlangıç tamamlandı');
+        }
+
+        // Render
+        function render() {
+            const ara = document.getElementById('ara').value.toLowerCase();
+            const filtrelenmis = veri.daireler.filter(d => 
+                d.no.toString().includes(ara) || 
+                d.ad.toLowerCase().includes(ara) || 
+                d.tel.includes(ara)
+            );
+
+            let html = '';
+            let bekleyen = 0;
+
+            filtrelenmis.forEach(d => {
+                const kiraOdendi = d.odeme.kira[veri.ay];
+                const aidatOdendi = d.odeme.aidat[veri.ay];
+                const isitmaOdendi = d.odeme.isitma[veri.ay];
+                
+                const toplam = d.kira + (d.bos ? 0 : veri.aidat) + (d.bos ? 0 : veri.isitma);
+                
+                if (!d.bos) {
+                    if (!kiraOdendi) bekleyen += d.kira;
+                    if (!aidatOdendi) bekleyen += veri.aidat;
+                    if (!isitmaOdendi) bekleyen += veri.isitma;
+                }
+                
+                const zamUyarisi = d.zam && !d.bos && veri.ay >= d.zam;
+                
+                let sinif = 'daire';
+                if (d.bos) sinif += ' bos-daire';
+                if (zamUyarisi) sinif += ' zam-uyarisi';
+                
+                html += `<div class="${sinif}">`;
+                
+                if (zamUyarisi) html += '<div class="uyari">⚠️ ZAM VAKTI!</div>';
+                if (d.bos) html += '<div class="uyari" style="background: #64748b;">🏚️ BOŞ</div>';
+                
+                html += `<div class="daire-no">#${d.no}</div>`;
+                html += `<div class="daire-info" data-edit="${d.no}">
+                    <strong>${d.ad || (d.bos ? '(Boş)' : 'İsim yok')}</strong>`;
+                if (d.tel) html += `<br>${d.tel}`;
+                html += `<small style="display: block; margin-top: 3px; color: #94a3b8;">✏️ Tıkla düzenle</small></div>`;
+                
+                html += '<div class="ucretler">';
+                html += `<div class="ucret ${kiraOdendi ? 'odenmis' : ''}" data-ucret="${d.no}-kira">
+                    <div style="font-size: 10px;">KIRA</div>
+                    <strong>₺${d.kira}</strong>
+                    <div>${kiraOdendi ? '✓' : '✗'}</div>
+                </div>`;
+                
+                if (d.bos) {
+                    html += `<div class="ucret" style="opacity: 0.5;"><div style="font-size: 10px;">AIDAT</div><strong>—</strong><div>—</div></div>`;
+                } else {
+                    html += `<div class="ucret ${aidatOdendi ? 'odenmis' : ''}" data-ucret="${d.no}-aidat">
+                        <div style="font-size: 10px;">AIDAT</div>
+                        <strong>₺${veri.aidat}</strong>
+                        <div>${aidatOdendi ? '✓' : '✗'}</div>
+                    </div>`;
+                }
+                
+                if (d.bos) {
+                    html += `<div class="ucret" style="opacity: 0.5;"><div style="font-size: 10px;">ISITMA</div><strong>—</strong><div>—</div></div>`;
+                } else {
+                    html += `<div class="ucret ${isitmaOdendi ? 'odenmis' : ''}" data-ucret="${d.no}-isitma">
+                        <div style="font-size: 10px;">ISITMA</div>
+                        <strong>₺${veri.isitma}</strong>
+                        <div>${isitmaOdendi ? '✓' : '✗'}</div>
+                    </div>`;
+                }
+                html += '</div>';
+                
+                html += `<div class="toplam"><span>TOPLAM:</span><span>₺${toplam}</span></div>`;
+                html += '</div>';
+            });
+
+            document.getElementById('daireler').innerHTML = html;
+            document.getElementById('gosterilen').textContent = filtrelenmis.length;
+            document.getElementById('bekleyen').textContent = bekleyen;
+            
+            // Event listener'ları ekle
+            document.querySelectorAll('[data-ucret]').forEach(el => {
+                el.addEventListener('click', function() {
+                    const [no, tur] = this.getAttribute('data-ucret').split('-');
+                    const d = veri.daireler.find(x => x.no === parseInt(no));
+                    if (!d || d.bos) return;
+                    
+                    if (d.odeme[tur][veri.ay]) {
+                        delete d.odeme[tur][veri.ay];
+                    } else {
+                        d.odeme[tur][veri.ay] = true;
+                    }
+                    render();
+                });
+            });
+            
+            document.querySelectorAll('[data-edit]').forEach(el => {
+                el.addEventListener('click', function() {
+                    const no = parseInt(this.getAttribute('data-edit'));
+                    duzenle(no);
+                });
+            });
+        }
+
+        function duzenle(no) {
+            const d = veri.daireler.find(x => x.no === no);
+            if (!d) return;
+            
+            veri.bos = d.bos;
+            document.getElementById('modal-baslik').textContent = `Daire #${no}`;
+            document.getElementById('mod-no').value = no;
+            document.getElementById('mod-no').disabled = true;
+            document.getElementById('mod-ad').value = d.ad;
+            document.getElementById('mod-tel').value = d.tel;
+            document.getElementById('mod-kira').value = d.kira;
+            document.getElementById('mod-zam').value = d.zam;
+            
+            if (veri.bos) {
+                document.getElementById('bos-btn').classList.add('secili');
+                document.getElementById('dolu-btn').classList.remove('secili');
+            } else {
+                document.getElementById('bos-btn').classList.remove('secili');
+                document.getElementById('dolu-btn').classList.add('secili');
+            }
+            
+            document.getElementById('modal').classList.add('acik');
+        }
+
+        document.getElementById('kaydetBtn').addEventListener('click', function() {
+            veri.aidat = parseFloat(document.getElementById('aidat').value) || 0;
+            veri.isitma = parseFloat(document.getElementById('isitma').value) || 0;
+            document.getElementById('aidat-goster').textContent = veri.aidat;
+            document.getElementById('isitma-goster').textContent = veri.isitma;
+            render();
+        });
+
+        document.getElementById('ekleBtn').addEventListener('click', function() {
+            veri.bos = false;
+            document.getElementById('modal-baslik').textContent = 'Yeni Daire';
+            document.getElementById('mod-no').value = '';
+            document.getElementById('mod-no').disabled = false;
+            document.getElementById('mod-ad').value = '';
+            document.getElementById('mod-tel').value = '';
+            document.getElementById('mod-kira').value = '';
+            document.getElementById('mod-zam').value = '';
+            document.getElementById('bos-btn').classList.remove('secili');
+            document.getElementById('dolu-btn').classList.add('secili');
+            document.getElementById('modal').classList.add('acik');
+        });
+
+        document.getElementById('iptal-btn').addEventListener('click', function() {
+            document.getElementById('modal').classList.remove('acik');
+        });
+
+        document.getElementById('kaydet-btn').addEventListener('click', function() {
+            const no = parseInt(document.getElementById('mod-no').value);
+            if (!no || no < 1 || no > 52) {
+                alert('Daire no 1-52 arasında!');
+                return;
+            }
+            
+            const d = veri.daireler.find(x => x.no === no);
+            if (!d) return;
+            
+            if (veri.bos) {
+                d.ad = '';
+                d.tel = '';
+                d.kira = 0;
+                d.zam = '';
+                d.bos = true;
+                d.odeme = { kira: {}, aidat: {}, isitma: {} };
+            } else {
+                d.ad = document.getElementById('mod-ad').value;
+                d.tel = document.getElementById('mod-tel').value;
+                d.kira = parseFloat(document.getElementById('mod-kira').value) || 0;
+                d.zam = document.getElementById('mod-zam').value;
+                d.bos = false;
+            }
+            
+            render();
+            document.getElementById('modal').classList.remove('acik');
+        });
+
+        document.getElementById('bos-btn').addEventListener('click', function() {
+            veri.bos = true;
+            this.classList.add('secili');
+            document.getElementById('dolu-btn').classList.remove('secili');
+        });
+
+        document.getElementById('dolu-btn').addEventListener('click', function() {
+            veri.bos = false;
+            this.classList.remove('secili');
+            this.classList.add('secili');
+            document.getElementById('bos-btn').classList.remove('secili');
+        });
+
+        document.getElementById('ay').addEventListener('change', function() {
+            veri.ay = this.value;
+            render();
+        });
+
+        document.getElementById('ara').addEventListener('input', render);
+
+        basla();
+    </script>
+</body>
+</html>
